@@ -18,16 +18,17 @@ namespace WizMoodLight
         private string wizBulbIP = ""; // Set this to your Wiz bulb IP
         private int wizBulbPort = 38899;
         private bool isRunning = false;
-        private int updateInterval = 2000; // milliseconds
+        private int updateInterval = 1500; // milliseconds
 
         // UI Controls
         private TextBox ipTextBox;
         private NumericUpDown intervalNumeric;
+        private NumericUpDown dimUpDown;
+        private NumericUpDown sampleSizeUpDown;
         private Button startButton;
         private Button stopButton;
         private Panel colorPreview;
         private Label statusLabel;
-        private Label debugLabel;
         private CheckBox smoothTransitionCheckBox;
 
         public MainForm()
@@ -40,7 +41,7 @@ namespace WizMoodLight
         private void InitializeComponent()
         {
             this.Text = "Wiz Mood Light Controller (UDP)";
-            this.Size = new Size(400, 300);
+            this.Size = new Size(400, 500);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -77,7 +78,7 @@ namespace WizMoodLight
                 Size = new Size(100, 25),
                 Minimum = 100,
                 Maximum = 5000,
-                Value = 1000,
+                Value = 1500,
                 Increment = 100
             };
             this.Controls.Add(intervalNumeric);
@@ -142,14 +143,43 @@ namespace WizMoodLight
             };
             this.Controls.Add(statusLabel);
 
-            debugLabel = new Label
+            var dimLabel = new Label
             {
-                Text = "debug",
-                Location = new Point(20, 0),
-                Size = new Size(350, 40),
-                ForeColor = Color.Blue
+                Text = "Dim",
+                Location = new Point(20, 240),
+                Size = new Size(120, 20)
             };
-            this.Controls.Add(debugLabel);
+            this.Controls.Add(dimLabel);
+
+            dimUpDown = new NumericUpDown
+            {
+                Location = new Point(20, 260),
+                Size = new Size(100, 25),
+                Minimum = 10,
+                Maximum = 100,
+                Value = 100,
+                Increment = 1
+            };
+            this.Controls.Add(dimUpDown);
+
+            var sampleLabel = new Label
+            {
+                Text = "Sample size",
+                Location = new Point(20, 300),
+                Size = new Size(120, 20)
+            };
+            this.Controls.Add(sampleLabel);
+
+            sampleSizeUpDown = new NumericUpDown
+            {
+                Location = new Point(20, 320),
+                Size = new Size(100, 25),
+                Minimum = 5,
+                Maximum = 50,
+                Value = 5,
+                Increment = 1
+            };
+            this.Controls.Add(sampleSizeUpDown);
         }
 
         private async void StartButton_Click(object sender, EventArgs e)
@@ -226,7 +256,6 @@ namespace WizMoodLight
         private Color GetDominantScreenColor()
         {
             var bounds = Screen.PrimaryScreen.Bounds;
-            debugLabel.Text = $"{bounds.Width} {bounds.Height}";
             using (var bitmap = new Bitmap(bounds.Width, bounds.Height))
             {
                 using (var graphics = Graphics.FromImage(bitmap))
@@ -235,21 +264,13 @@ namespace WizMoodLight
                 }
 
                 var colorCounts = new Dictionary<Color, int>();
-                int sampleSize = 50;
-
-                long totalR = 0, totalG = 0, totalB = 0;
-                int count = 0;
+                int sampleSize = (int)sampleSizeUpDown.Value;
 
                 for (int x = 0; x < bounds.Width; x += sampleSize)
                 {
                     for (int y = 0; y < bounds.Height; y += sampleSize)
                     {
                         var pixel = bitmap.GetPixel(x, y);
-                        /*totalR += pixel.R;
-                        totalG += pixel.G;
-                        totalB += pixel.B;
-                        count++;*/
-
                         var quantized = Color.FromArgb(
                             (pixel.R / 32) * 32,
                             (pixel.G / 32) * 32,
@@ -265,12 +286,6 @@ namespace WizMoodLight
                     }
                 }
 
-                /*if (count == 0) return Color.White;
-                int avgR = (int)(totalR / count);
-                int avgG = (int)(totalG / count);
-                int avgB = (int)(totalB / count);
-
-                return Color.FromArgb(avgR, avgG, avgB);*/
                 var dominantColor = colorCounts
                     .OrderByDescending(kvp => kvp.Value)
                     .FirstOrDefault().Key;
@@ -321,7 +336,7 @@ namespace WizMoodLight
                         r = color.R,
                         g = color.G,
                         b = color.B,
-                        dimming = 50
+                        dimming = dimUpDown.Value
                     }
                 };
 
