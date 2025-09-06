@@ -321,7 +321,7 @@ namespace WizMoodLight
                         r = color.R,
                         g = color.G,
                         b = color.B,
-                        dimming = 100
+                        dimming = 50
                     }
                 };
 
